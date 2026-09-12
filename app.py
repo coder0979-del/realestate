@@ -64,6 +64,17 @@ def init_db():
             FOREIGN KEY (property_name) REFERENCES properties (name)
         )
     """)
+    cursor.execute("DROP TABLE IF EXISTS properties;")
+
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS properties (
+            name TEXT PRIMARY KEY, 
+            type TEXT, 
+            address TEXT, 
+            price REAL, 
+            status TEXT DEFAULT 'شاغر'
+        )
+    """)
     
     conn.commit()
     conn.close()
