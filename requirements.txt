@@ -3,7 +3,7 @@ gunicorn
 blinker
 reportlab
 pillow
-Werkzeugblinker==1.9.0
+Werkzeugblinker
 charset-normalizer==3.5.1
 click==8.5.0
 et_xmlfile==2.0.0
