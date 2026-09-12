@@ -268,6 +268,27 @@
             font-weight: 800;
             color: #0f172a;
         }
+        @media print {
+        body {
+            background-color: #fff !important;
+            color: #000 !important;
+        }
+        /* إخفاء القائمة الجانبية والأزرار عند الطباعة */
+        .sidebar, .nav-menu, .btn, form, header {
+            display: none !important;
+        }
+        /* جعل محتوى الصفحة يملأ الشاشة بالكامل */
+        .main-content {
+            margin: 0 !important;
+            padding: 0 !important;
+            max-width: 100% !important;
+        }
+        .card-box {
+            border: none !important;
+            box-shadow: none !important;
+            padding: 0 !important;
+        }
+    }
     </style>
 </head>
 <body>
@@ -280,6 +301,9 @@
         <button onclick="printReport()" class="btn btn-primary" style="margin-bottom: 15px;">
     <i class="fas fa-print"></i> طباعة / حفظ PDF
 </button>
+<a href="/download_pdf_report" class="btn btn-success">
+    <i class="fas fa-file-pdf"></i> تحميل تقرير العقارات PDF
+</a>
         <ul class="nav-menu">
             <li class="nav-item">
                 <a class="nav-link active" onclick="switchTab(event, 'dashboard')">
@@ -700,6 +724,11 @@
             document.getElementById(tabId).classList.add('active');
             evt.currentTarget.classList.add('active');
         }
+ 
+            function printReport() {
+                window.print(); // تفتح نافذة الطباعة في المتصفح، ومنها يختار المستخدم "Save as PDF"
+            }
+ 
     </script>
 </body>
 </html>

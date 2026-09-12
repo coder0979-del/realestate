@@ -1,6 +1,10 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import sqlite3
 from datetime import datetime
+from flask import send_file
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import io
 
 app = Flask(__name__)
 app.secret_key = 'my_super_secret_key_12345'
@@ -259,6 +263,46 @@ def add_expense():
         conn.close()
     return redirect(url_for('index'))
 
+
+@app.route('/download_pdf_report')
+def download_pdf_report():
+    if not session.get('logged_in'): 
+        return redirect(url_for('login'))
+        
+    # إنشاء ملف PDF في الذاكرة المؤقتة
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    
+    # كتابة بيانات التقرير داخل ملف الـ PDF
+    p.setFont("Helvetica-Bold", 16)
+    p.drawString(200, 750, "Amlak Enterprise - Report")
+    
+    p.setFont("Helvetica", 12)
+    p.drawString(50, 700, "This is an automated financial and property report.")
+    
+    # جلب بيانات العقارات من القاعدة
+    conn = sqlite3.connect('real_estate.db')
+    cursor = conn.cursor()
+    cursor.execute("SELECT name, type, price, status FROM properties")
+    props = cursor.fetchall()
+    conn.close()
+    
+    y = 650
+    for prop in props:
+        text = f"Property: {prop[0]} | Type: {prop[1]} | Price: {prop[2]} | Status: {prop[3]}"
+        p.drawString(50, y, text)
+        y -= 25
+        if y < 50:
+            p.showPage()
+            y = 750
+
+    p.save()
+    buffer.seek(0)
+    
+    return send_file(buffer, as_attachment=True, download_name="amlak_report.pdf", mimetype='application/pdf')
+
+
 if __name__ == '__main__':
     init_db()
     app.run(debug=False, port=5000)
+    
