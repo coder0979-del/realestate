@@ -413,7 +413,7 @@
             </div>
         </div>
 
-        <!-- 2. Properties View -->
+<!-- 2. Properties View -->
         <div id="properties" class="tab-pane">
             <div class="page-header">
                 <h4>إدارة العقارات</h4>
@@ -468,6 +468,7 @@
                                 <th>العنوان</th>
                                 <th>الإيجار المتوقع</th>
                                 <th>الحالة</th>
+                                <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -482,7 +483,14 @@
                                         {{ prop[4] }}
                                     </span>
                                 </td>
+                                <td>
+                                    <a href="/delete_property/{{ prop[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('هل أنت متأكد من حذف هذا العقار؟')">
+                                        <i class="fas fa-trash"></i> حذف
+                                    </a>
+                                </td>
                             </tr>
+                            {% else %}
+                            <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">لا توجد عقارات مضافة حتى الآن</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -491,6 +499,7 @@
         </div>
 
         <!-- 3. Contracts View -->
+<!-- 3. Contracts View -->
         <div id="contracts" class="tab-pane">
             <div class="page-header">
                 <h4>سجل العقود الإيجارية</h4>
@@ -505,6 +514,7 @@
                                 <th>العقار</th>
                                 <th>تاريخ البدء</th>
                                 <th>القيمة الإجمالية</th>
+                                <th>الإجراءات</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -514,8 +524,15 @@
                                 <td style="font-weight: 700;">{{ c[1] }}</td>
                                 <td>{{ c[2] }}</td>
                                 <td style="color: #64748b;">{{ c[3] }}</td>
-                                <td style="font-weight: 700; color: #10b981;">{{ "%.2f"|format(c[4]) }} د.إ</td>
+                                <td style="font-weight: 700; color: #10b981;">{{ "%.2f"|format(c[4]|float) }} د.إ</td>
+                                <td>
+                                    <a href="/delete_contract/{{ c[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('حذف العقد سيقوم بتحرير العقار وإلغاء دفعاته. هل أنت متأكد؟')">
+                                        <i class="fas fa-trash"></i> حذف
+                                    </a>
+                                </td>
                             </tr>
+                            {% else %}
+                            <tr><td colspan="6" style="text-align: center; color: #64748b; padding: 20px;">لا توجد عقود مسجلة حالياً</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -524,6 +541,7 @@
         </div>
 
         <!-- 4. New Contract View -->
+<!-- 4. New Contract View -->
         <div id="new-contract" class="tab-pane">
             <div class="page-header">
                 <h4>إنشاء عقد إيجار جديد</h4>
@@ -539,13 +557,18 @@
                         </div>
                         <div class="col col-md-6">
                             <div class="form-group">
-                                <label>العقار الشاغر</label>
-                                <select name="property_name">
+                                <label>العقار (الشاغر)</label>
+                                <select name="property_name" required>
+                                    {% set found_vacant = namespace(value=false) %}
                                     {% for prop in properties %}
                                         {% if prop[4] == 'شاغر' %}
-                                            <option value="{{ prop[0] }}">{{ prop[0] }} ({{ prop[3] }} د.إ)</option>
+                                            {% set found_vacant.value = true %}
+                                            <option value="{{ prop[0] }}">{{ prop[0] }} - {{ prop[1] }} ({{ prop[3] }} د.إ)</option>
                                         {% endif %}
                                     {% endfor %}
+                                    {% if not found_vacant.value %}
+                                        <option value="" disabled selected>لا توجد عقارات شاغرة حالياً (أضف عقاراً جديداً أولاً)</option>
+                                    {% endif %}
                                 </select>
                             </div>
                         </div>
@@ -579,7 +602,7 @@
                 </form>
             </div>
         </div>
-
+        
         <!-- 5. Payments View -->
         <div id="payments" class="tab-pane">
             <div class="page-header">

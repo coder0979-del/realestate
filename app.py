@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import send_file
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -16,48 +16,50 @@ def init_db():
     conn = sqlite3.connect("real_estate.db")
     cursor = conn.cursor()
     
+    # جدول العقارات (الاعتماد على name كـ Primary Key ومطابقة أسماء الأعمدة)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS properties (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT UNIQUE,
-            type TEXT,
-            address TEXT,
-            rent_price REAL,
+            name TEXT PRIMARY KEY, 
+            type TEXT, 
+            address TEXT, 
+            price REAL, 
             status TEXT DEFAULT 'شاغر'
         )
     """)
     
+    # جدول العقود
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS contracts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            contract_code TEXT UNIQUE,
-            tenant_name TEXT,
-            property_name TEXT,
+            contract_code TEXT PRIMARY KEY, 
+            tenant_name TEXT, 
+            property_name TEXT, 
+            start_date TEXT, 
             total_amount REAL,
-            start_date TEXT,
-            status TEXT
+            status TEXT DEFAULT 'نشط'
         )
     """)
     
+    # جدول الدفعات
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS payments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            contract_code TEXT,
-            payment_number INTEGER,
-            due_date TEXT,
-            amount REAL,
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            contract_code TEXT, 
+            installment_no INTEGER, 
+            due_date TEXT, 
+            amount REAL, 
             status TEXT,
             FOREIGN KEY (contract_code) REFERENCES contracts (contract_code)
         )
     """)
 
+    # جدول المصاريف
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS expenses (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            property_name TEXT,
-            category TEXT,
-            amount REAL,
-            expense_date TEXT,
+            id INTEGER PRIMARY KEY AUTOINCREMENT, 
+            property_name TEXT, 
+            category TEXT, 
+            amount REAL, 
+            expense_date TEXT, 
             notes TEXT,
             FOREIGN KEY (property_name) REFERENCES properties (name)
         )
@@ -66,6 +68,8 @@ def init_db():
     conn.commit()
     conn.close()
 
+init_db()
+
 # ---------------------------------------------------------
 # Routes / Views
 # ---------------------------------------------------------
@@ -73,42 +77,6 @@ ADMIN_CREDENTIALS = {
     "email": "coder0979@gmail.com",
     "password": "admin123"
 }
-
-def init_db():
-    conn = sqlite3.connect('real_estate.db')
-    cursor = conn.cursor()
-    
-    # جدول العقارات
-    cursor.execute('''CREATE TABLE IF NOT EXISTS properties (
-                        name TEXT PRIMARY KEY, type TEXT, address TEXT, price REAL, status TEXT)''')
-    
-    # جدول العقود
-    cursor.execute('''CREATE TABLE IF NOT EXISTS contracts (
-                        contract_no TEXT PRIMARY KEY, tenant_name TEXT, property_name TEXT, start_date TEXT, total_amount REAL)''')
-    
-    # جدول الدفعات (مع التأكد من الأعمدة)
-    cursor.execute('''CREATE TABLE IF NOT EXISTS payments (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT, contract_no TEXT, installment_no INTEGER, 
-                        due_date TEXT, amount REAL, status TEXT)''')
-    
-    # جدول المصاريف
-    cursor.execute('''CREATE TABLE IF NOT EXISTS expenses (
-                        id INTEGER PRIMARY KEY AUTOINCREMENT, property_name TEXT, category TEXT, 
-                        amount REAL, expense_date TEXT, notes TEXT)''')
-    
-    # حل مؤقت: إذا كان الجدول قديماً ولا يحتوي على عمود contract_no، نقوم بإضافته لتفادي الخطأ
-    try:
-        cursor.execute("SELECT contract_no FROM payments LIMIT 1")
-    except sqlite3.OperationalError:
-        cursor.execute("DROP TABLE IF EXISTS payments")
-        cursor.execute('''CREATE TABLE payments (
-                            id INTEGER PRIMARY KEY AUTOINCREMENT, contract_no TEXT, installment_no INTEGER, 
-                            due_date TEXT, amount REAL, status TEXT)''')
-
-    conn.commit()
-    conn.close()
-
-init_db()
 
 # --- مسار تسجيل الدخول ---
 @app.route('/login', methods=['GET', 'POST'])
@@ -145,12 +113,11 @@ def reset_password():
 @app.route('/logout')
 def logout():
     session.clear()
-    
     return redirect(url_for('login'))
 
 @app.route('/')
 def index():
-    # إذا لم يكن المستخدم مسجلاً للدخول، قم بعرض صفحة الهبوط بدلاً من لوحة التحكم
+    # إذا لم يكن المستخدم مسجلاً للدخول، عرض صفحة الهبوط
     if not session.get('logged_in'):
         return render_template('landing.html')
         
@@ -178,7 +145,7 @@ def index():
     net_profit = total_inc - total_exp
 
     today_str = datetime.now().strftime('%Y-%m-%d')
-    cursor.execute("SELECT contract_no, due_date, amount, status FROM payments WHERE due_date >= ? AND status != 'تم المدفوع' ORDER BY due_date ASC LIMIT 5", (today_str,))
+    cursor.execute("SELECT contract_code, due_date, amount, status FROM payments WHERE due_date >= ? AND status != 'تم المدفوع' ORDER BY due_date ASC LIMIT 5", (today_str,))
     upcoming_payments = cursor.fetchall()
 
     conn.close()
@@ -194,9 +161,9 @@ def index():
                            net_profit=net_profit,
                            upcoming_payments=upcoming_payments)
 
-
 @app.route('/add_property', methods=['POST'])
 def add_property():
+    if not session.get('logged_in'): return redirect(url_for('login'))
     name = request.form.get('name')
     p_type = request.form.get('type')
     address = request.form.get('address')
@@ -206,20 +173,32 @@ def add_property():
         conn = sqlite3.connect("real_estate.db")
         cursor = conn.cursor()
         try:
-            cursor.execute("INSERT INTO properties (name, type, address, rent_price, status) VALUES (?, ?, ?, ?, ?)",
+            cursor.execute("INSERT INTO properties (name, type, address, price, status) VALUES (?, ?, ?, ?, ?)",
                            (name, p_type, address, float(price), "شاغر"))
             conn.commit()
-        except:
-            pass
+        except Exception as e:
+            print("Error adding property:", e)
         conn.close()
+    return redirect(url_for('index'))
+
+@app.route('/delete_property/<name>')
+def delete_property(name):
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM properties WHERE name = ?", (name,))
+    conn.commit()
+    conn.close()
+    flash('تم حذف العقار بنجاح', 'success')
     return redirect(url_for('index'))
 
 @app.route('/add_contract', methods=['POST'])
 def add_contract():
+    if not session.get('logged_in'): return redirect(url_for('login'))
     tenant = request.form.get('tenant_name')
     property_name = request.form.get('property_name')
     total_amount = float(request.form.get('total_amount'))
-    plan = int(request.form.get('installment_plan'))
+    plan = int(request.form.get('installment_plan', 1))
     start_date = request.form.get('start_date')
 
     conn = sqlite3.connect("real_estate.db")
@@ -229,30 +208,51 @@ def add_contract():
     count = cursor.fetchone()[0] + 101
     contract_code = f"CNT-{count}"
 
-    cursor.execute("INSERT INTO contracts (contract_code, tenant_name, property_name, total_amount, start_date, status) VALUES (?, ?, ?, ?, ?, ?)",
-                   (contract_code, tenant, property_name, total_amount, start_date, "نشط"))
+    cursor.execute("INSERT INTO contracts (contract_code, tenant_name, property_name, start_date, total_amount, status) VALUES (?, ?, ?, ?, ?, ?)",
+                   (contract_code, tenant, property_name, start_date, total_amount, "نشط"))
 
     cursor.execute("UPDATE properties SET status = 'مؤجر' WHERE name = ?", (property_name,))
 
-    installments_map = {1: 1, 2: 2, 4: 4, 12: 12}
-    num_payments = installments_map.get(plan, 1)
-    months_step = 12 // num_payments
+    num_payments = plan
+    months_step = 12 // num_payments if num_payments <= 12 else 1
     installment_amount = total_amount / num_payments
 
-    from datetime import datetime, timedelta
     base_date = datetime.strptime(start_date, "%Y-%m-%d")
 
     for i in range(num_payments):
         due_date = (base_date + timedelta(days=30 * i * months_step)).strftime("%Y-%m-%d")
-        cursor.execute("INSERT INTO payments (contract_code, payment_number, due_date, amount, status) VALUES (?, ?, ?, ?, ?)",
+        cursor.execute("INSERT INTO payments (contract_code, installment_no, due_date, amount, status) VALUES (?, ?, ?, ?, ?)",
                        (contract_code, i + 1, due_date, installment_amount, "مستحقة"))
 
     conn.commit()
     conn.close()
     return redirect(url_for('index'))
 
+@app.route('/delete_contract/<contract_code>')
+def delete_contract(contract_code):
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    cursor = conn.cursor()
+    
+    # تحرير العقار وإعادته لحالة شاغر
+    cursor.execute("SELECT property_name FROM contracts WHERE contract_code = ?", (contract_code,))
+    res = cursor.fetchone()
+    if res:
+        prop_name = res[0]
+        cursor.execute("UPDATE properties SET status = 'شاغر' WHERE name = ?", (prop_name,))
+    
+    # حذف العقد والدفعات المرتبطة به
+    cursor.execute("DELETE FROM contracts WHERE contract_code = ?", (contract_code,))
+    cursor.execute("DELETE FROM payments WHERE contract_code = ?", (contract_code,))
+    
+    conn.commit()
+    conn.close()
+    flash('تم حذف العقد وتحرير العقار بنجاح', 'success')
+    return redirect(url_for('index'))
+
 @app.route('/pay/<int:pay_id>')
 def pay_payment(pay_id):
+    if not session.get('logged_in'): return redirect(url_for('login'))
     conn = sqlite3.connect("real_estate.db")
     cursor = conn.cursor()
     cursor.execute("UPDATE payments SET status = 'تم المدفوع' WHERE id = ?", (pay_id,))
@@ -262,6 +262,7 @@ def pay_payment(pay_id):
 
 @app.route('/add_expense', methods=['POST'])
 def add_expense():
+    if not session.get('logged_in'): return redirect(url_for('login'))
     prop_name = request.form.get('property_name')
     category = request.form.get('category')
     amount = request.form.get('amount')
@@ -277,24 +278,20 @@ def add_expense():
         conn.close()
     return redirect(url_for('index'))
 
-
 @app.route('/download_pdf_report')
 def download_pdf_report():
     if not session.get('logged_in'): 
         return redirect(url_for('login'))
         
-    # إنشاء ملف PDF في الذاكرة المؤقتة
     buffer = io.BytesIO()
     p = canvas.Canvas(buffer, pagesize=letter)
     
-    # كتابة بيانات التقرير داخل ملف الـ PDF
     p.setFont("Helvetica-Bold", 16)
     p.drawString(200, 750, "Amlak Enterprise - Report")
     
     p.setFont("Helvetica", 12)
     p.drawString(50, 700, "This is an automated financial and property report.")
     
-    # جلب بيانات العقارات من القاعدة
     conn = sqlite3.connect('real_estate.db')
     cursor = conn.cursor()
     cursor.execute("SELECT name, type, price, status FROM properties")
@@ -315,8 +312,5 @@ def download_pdf_report():
     
     return send_file(buffer, as_attachment=True, download_name="amlak_report.pdf", mimetype='application/pdf')
 
-
 if __name__ == '__main__':
-    init_db()
     app.run(debug=True, port=5000)
-    
