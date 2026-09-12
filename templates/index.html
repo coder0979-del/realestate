@@ -203,7 +203,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
-            white-space: nowrap; /* يمنع تداخل النصوص في الجداول على الموبايل ويوفر تمرير أفقي */
+            white-space: nowrap;
         }
 
         th {
@@ -304,16 +304,16 @@
                 display: flex;
             }
             .sidebar {
-                transform: translateX(100%); /* إخفاء القائمة الجانبية افتراضياً في الشاشات الصغيرة */
+                transform: translateX(100%);
             }
             .sidebar.show {
-                transform: translateX(0); /* إظهار القائمة عند الضغط على زر القائمة */
+                transform: translateX(0);
             }
             .main-content {
                 margin-right: 0 !important;
                 max-width: 100% !important;
                 padding: 20px 15px;
-                margin-top: 60px; /* مسافة للهيدر العلوي الجديد في الموبايل */
+                margin-top: 60px;
             }
             .col-md-3, .col-md-4, .col-md-6 {
                 flex: 0 0 100% !important;
@@ -457,7 +457,6 @@
                                 <th>المبلغ</th>
                                 <th>الحالة</th>
                             </tr>
-                            
                         </thead>
                         <tbody>
                             {% for p in upcoming_payments %}
@@ -466,7 +465,6 @@
                                 <td>{{ p[1] }}</td>
                                 <td style="font-weight: 700; color: #10b981;">{{ "%.2f"|format(p[2]) }} د.إ</td>
                                 <td><span class="badge badge-danger">{{ p[3] }}</span></td>
-
                             </tr>
                             {% else %}
                             <tr><td colspan="4" style="text-align: center; color: #64748b; padding: 20px;">لا توجد دفعات مستحقة حالياً</td></tr>
@@ -547,15 +545,10 @@
                                         {{ prop[4] }}
                                     </span>
                                 </td>
-                                                                <td>
-    <a href="/edit_property/{{ prop[0] }}" class="btn btn-sm btn-primary" style="text-decoration: none; margin-left: 5px;">
-        <i class="fas fa-edit"></i> تعديل
-    </a>
-    <a href="/delete_property/{{ prop[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('هل أنت متأكد من حذف هذا العقار؟')">
-        <i class="fas fa-trash"></i> حذف
-    </a>
-</td>
                                 <td>
+                                    <a href="/edit_property/{{ prop[0] }}" class="btn btn-sm btn-primary" style="text-decoration: none; margin-left: 5px;">
+                                        <i class="fas fa-edit"></i> تعديل
+                                    </a>
                                     <a href="/delete_property/{{ prop[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('هل أنت متأكد من حذف هذا العقار؟')">
                                         <i class="fas fa-trash"></i> حذف
                                     </a>
@@ -597,14 +590,9 @@
                                 <td style="color: #64748b;">{{ c[3] }}</td>
                                 <td style="font-weight: 700; color: #10b981;">{{ "%.2f"|format(c[4]|float) }} د.إ</td>
                                 <td>
-    <a href="/edit_contract/{{ c[0] }}" class="btn btn-sm btn-primary" style="text-decoration: none; margin-left: 5px;">
-        <i class="fas fa-edit"></i> تعديل
-    </a>
-    <a href="/delete_contract/{{ c[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('حذف العقد سيقوم بتحرير العقار وإلغاء دفعاته. هل أنت متأكد؟')">
-        <i class="fas fa-trash"></i> حذف
-    </a>
-</td>
-                                <td>
+                                    <a href="/edit_contract/{{ c[0] }}" class="btn btn-sm btn-primary" style="text-decoration: none; margin-left: 5px;">
+                                        <i class="fas fa-edit"></i> تعديل
+                                    </a>
                                     <a href="/delete_contract/{{ c[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('حذف العقد سيقوم بتحرير العقار وإلغاء دفعاته. هل أنت متأكد؟')">
                                         <i class="fas fa-trash"></i> حذف
                                     </a>
@@ -705,29 +693,22 @@
                                 <td style="font-weight: 700;">{{ pay[1] }}</td>
                                 <td>الدفعة ({{ pay[2] }})</td>
                                 <td style="color: #64748b;">{{ pay[3] }}</td>
-                                <td style="font-weight: 700;">{{ "%.2f"|format(pay[4]) }} د.إ</td>
+                                <td style="font-weight: 700;">{{ "%.2f"|format(pay[4]|float) }} د.إ</td>
                                 <td>
                                     <span class="badge {% if pay[5] == 'تم المدفوع' %}badge-success{% else %}badge-danger{% endif %}">
                                         {{ pay[5] }}
                                     </span>
                                 </td>
                                 <td>
+                                    <a href="/edit_payment/{{ pay[0] }}" class="btn btn-sm btn-primary" style="text-decoration: none; margin-left: 5px;">
+                                        <i class="fas fa-edit"></i> تعديل
+                                    </a>
                                     {% if pay[5] != 'تم المدفوع' %}
                                         <a href="/pay/{{ pay[0] }}" class="btn btn-sm btn-success" style="text-decoration: none;"><i class="fas fa-check"></i> سداد</a>
                                     {% else %}
                                         <span style="color: #64748b; font-size: 0.8rem;">مكتمل</span>
                                     {% endif %}
                                 </td>
-                                <td>
-    <a href="/edit_payment/{{ pay[0] }}" class="btn btn-sm btn-primary" style="text-decoration: none; margin-left: 5px;">
-        <i class="fas fa-edit"></i> تعديل
-    </a>
-    {% if pay[5] != 'تم المدفوع' %}
-        <a href="/pay/{{ pay[0] }}" class="btn btn-sm btn-success" style="text-decoration: none;"><i class="fas fa-check"></i> سداد</a>
-    {% else %}
-        <span style="color: #64748b; font-size: 0.8rem;">مكتمل</span>
-    {% endif %}
-</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -807,7 +788,8 @@
                             <tr>
                                 <td style="font-weight: 700;">{{ exp[0] }}</td>
                                 <td>{{ exp[1] }}</td>
-                                <td style="font-weight: 700; color: #ef4444;">{{ "%.2f"|format(exp[2]) }} د.إ</td>
+                                <!-- تم تصحيح الفلتر أدناه بإضافة |float لتعمل التنسيقات بدون أخطاء -->
+                                <td style="font-weight: 700; color: #ef4444;">{{ "%.2f"|format(exp[2]|float) }} د.إ</td>
                                 <td style="color: #64748b;">{{ exp[3] }}</td>
                                 <td>{{ exp[4] if exp[4] else '-' }}</td>
                             </tr>
@@ -832,7 +814,6 @@
             document.getElementById(tabId).classList.add('active');
             evt.currentTarget.classList.add('active');
 
-            // إخفاء القائمة الجانبية تلقائياً في الموبايل عند اختيار تبويب
             if (window.innerWidth <= 992) {
                 document.getElementById('appSidebar').classList.remove('show');
             }
