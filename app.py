@@ -288,6 +288,50 @@ def add_expense():
         conn.commit()
         conn.close()
     return redirect(url_for('index'))
+# --- حذف مصروف ---
+@app.route('/delete_expense/<int:exp_id>')
+def delete_expense(exp_id):
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM expenses WHERE id = ?", (exp_id,))
+    conn.commit()
+    conn.close()
+    flash('تم حذف المصروف بنجاح', 'success')
+    return redirect(url_for('index'))
+
+# --- تعديل مصروف ---
+@app.route('/edit_expense/<int:exp_id>', methods=['GET', 'POST'])
+def edit_expense(exp_id):
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        prop_name = request.form.get('property_name')
+        category = request.form.get('category')
+        amount = float(request.form.get('amount'))
+        expense_date = request.form.get('expense_date')
+        notes = request.form.get('notes')
+        
+        cursor.execute("""
+            UPDATE expenses 
+            SET property_name = ?, category = ?, amount = ?, expense_date = ?, notes = ? 
+            WHERE id = ?
+        """, (prop_name, category, amount, expense_date, notes, exp_id))
+        conn.commit()
+        conn.close()
+        flash('تم تحديث المصروف بنجاح', 'success')
+        return redirect(url_for('index'))
+        
+    cursor.execute("SELECT * FROM expenses WHERE id = ?", (exp_id,))
+    expense_data = cursor.fetchone()
+    
+    cursor.execute("SELECT name FROM properties")
+    properties = cursor.fetchall()
+    
+    conn.close()
+    return render_template('edit_expense.html', expense=expense_data, properties=properties)
 
 @app.route('/download_pdf_report')
 def download_pdf_report():
