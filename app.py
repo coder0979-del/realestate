@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
 import sqlite3
 from datetime import datetime, timedelta
 from flask import send_file
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 import io
+import pandas as pd
 
 app = Flask(__name__)
 app.secret_key = 'my_super_secret_key_12345'
@@ -203,13 +204,14 @@ def delete_property(name):
     flash('تم حذف العقار بنجاح', 'success')
     return redirect(url_for('index'))
 
+# --- تحديث مسار إضافة العقد لدعم المدد الجديدة (1, 4, 6, 8, 10, 12 شهر) ---
 @app.route('/add_contract', methods=['POST'])
 def add_contract():
     if not session.get('logged_in'): return redirect(url_for('login'))
     tenant = request.form.get('tenant_name')
     property_name = request.form.get('property_name')
     total_amount = float(request.form.get('total_amount'))
-    plan = int(request.form.get('installment_plan', 1))
+    plan_months = int(request.form.get('installment_plan', 1))  # عدد الأشهر (المدة)
     start_date = request.form.get('start_date')
 
     conn = sqlite3.connect("real_estate.db")
@@ -224,20 +226,68 @@ def add_contract():
 
     cursor.execute("UPDATE properties SET status = 'مؤجر' WHERE name = ?", (property_name,))
 
-    num_payments = plan
-    months_step = 12 // num_payments if num_payments <= 12 else 1
+    # إنشاء الأقساط بناءً على عدد الأشهر المختار (كل شهر قسط)
+    num_payments = plan_months
     installment_amount = total_amount / num_payments
-
     base_date = datetime.strptime(start_date, "%Y-%m-%d")
 
     for i in range(num_payments):
-        due_date = (base_date + timedelta(days=30 * i * months_step)).strftime("%Y-%m-%d")
+        # زيادة شهر لكل قسط تدريجياً
+        due_date = (base_date + timedelta(days=30 * i)).strftime("%Y-%m-%d")
         cursor.execute("INSERT INTO payments (contract_code, installment_no, due_date, amount, status) VALUES (?, ?, ?, ?, ?)",
                        (contract_code, i + 1, due_date, installment_amount, "مستحقة"))
 
     conn.commit()
     conn.close()
     return redirect(url_for('index'))
+
+
+# --- مسارات تصدير البيانات إلى ملفات Excel (CSV) ---
+@app.route('/export/properties')
+def export_properties():
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db') # تأكد من اسم قاعد البيانات لديك
+    df = pd.read_sql_query("SELECT name AS 'اسم العقار', type AS 'النوع', address AS 'العنوان', price AS 'السعر المتوقع', status AS 'الحالة' FROM properties", conn)
+    conn.close()
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='العقارات')
+    output.seek(0)
+    
+    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                     as_attachment=True, download_name='properties_report.xlsx')
+
+@app.route('/export/contracts')
+def export_contracts():
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    df = pd.read_sql_query("SELECT contract_code AS 'رقم العقد', tenant_name AS 'اسم المستأجر', property_name AS 'اسم العقار', start_date AS 'تاريخ البدء', total_amount AS 'القيمة الإجمالية', status AS 'الحالة' FROM contracts", conn)
+    conn.close()
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='العقود')
+    output.seek(0)
+    
+    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                     as_attachment=True, download_name='contracts_report.xlsx')
+
+
+@app.route('/export/expenses')
+def export_expenses():
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    df = pd.read_sql_query("SELECT property_name AS 'العقار', category AS 'نوع المصروف', amount AS 'المبلغ', expense_date AS 'التاريخ', notes AS 'ملاحظات' FROM expenses", conn)
+    conn.close()
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='المصاريف')
+    output.seek(0)
+    
+    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                     as_attachment=True, download_name='expenses_report.xlsx')
 
 @app.route('/delete_contract/<contract_code>')
 def delete_contract(contract_code):
@@ -424,6 +474,20 @@ def edit_contract(contract_code):
     conn.close()
     return render_template('edit_contract.html', contract=contract_data)
 
+@app.route('/export/payments')
+def export_payments():
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    df = pd.read_sql_query("SELECT contract_code AS 'رقم العقد', installment_no AS 'رقم القسط', due_date AS 'تاريخ الاستحقاق', amount AS 'المبلغ', status AS 'الحالة' FROM payments", conn)
+    conn.close()
+
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='الدفعات')
+    output.seek(0)
+    
+    return send_file(output, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 
+                     as_attachment=True, download_name='payments_report.xlsx')
 
 # --- تعديل دفعة / تحصيل ---
 @app.route('/edit_payment/<int:pay_id>', methods=['GET', 'POST'])

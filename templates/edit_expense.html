@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تعديل المصروف التشغيلي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Cairo', sans-serif; }
+        body { background-color: #f8fafc; padding: 40px; color: #1e293b; }
+        .card { background: #fff; padding: 30px; border-radius: 12px; max-width: 600px; margin: auto; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
+        h3 { margin-bottom: 20px; font-weight: 800; color: #0f172a; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 700; margin-bottom: 5px; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.9rem; outline: none; }
+        input:focus, select:focus { border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); }
+        .btn-container { margin-top: 20px; display: flex; gap: 10px; }
+        .btn { padding: 10px 20px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 5px; }
+        .btn-primary { background: #0284c7; color: #fff; }
+        .btn-secondary { background: #64748b; color: #fff; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h3><i class="fas fa-edit text-primary"></i> تعديل بيانات المصروف</h3>
+        <form method="POST">
+            <div class="form-group">
+                <label>العقار</label>
+                <select name="property_name" required>
+                    {% for p in properties %}
+                    <option value="{{ p[0] }}" {% if p[0] == expense[1] %}selected{% endif %}>{{ p[0] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>نوع المصروف</label>
+                <select name="category">
+                    <option {% if expense[2] == 'صيانة إصلاحية' %}selected{% endif %}>صيانة إصلاحية</option>
+                    <option {% if expense[2] == 'فاتورة كهرباء' %}selected{% endif %}>فاتورة كهرباء</option>
+                    <option {% if expense[2] == 'فاتورة مياه' %}selected{% endif %}>فاتورة مياه</option>
+                    <option {% if expense[2] == 'مصاريف إدارية' %}selected{% endif %}>مصاريف إدارية</option>
+                    <option {% if expense[2] == 'أخرى' %}selected{% endif %}>أخرى</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>المبلغ (د.إ)</label>
+                <input type="number" step="0.01" name="amount" value="{{ expense[3] }}" required>
+            </div>
+            <div class="form-group">
+                <label>التاريخ</label>
+                <input type="date" name="expense_date" value="{{ expense[4] }}" required>
+            </div>
+            <div class="form-group">
+                <label>ملاحظات</label>
+                <input type="text" name="notes" value="{{ expense[5] if expense[5] else '' }}">
+            </div>
+            <div class="btn-container">
+                <button type="submit" class="btn btn-primary"><i class="fas fa-save"></i> حفظ التعديلات</button>
+                <a href="/" class="btn btn-secondary"><i class="fas fa-times"></i> إلغاء</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
