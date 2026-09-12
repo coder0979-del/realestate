@@ -77,20 +77,34 @@ ADMIN_CREDENTIALS = {
 def init_db():
     conn = sqlite3.connect('real_estate.db')
     cursor = conn.cursor()
+    
     # جدول العقارات
     cursor.execute('''CREATE TABLE IF NOT EXISTS properties (
                         name TEXT PRIMARY KEY, type TEXT, address TEXT, price REAL, status TEXT)''')
+    
     # جدول العقود
     cursor.execute('''CREATE TABLE IF NOT EXISTS contracts (
                         contract_no TEXT PRIMARY KEY, tenant_name TEXT, property_name TEXT, start_date TEXT, total_amount REAL)''')
-    # جدول الدفعات
+    
+    # جدول الدفعات (مع التأكد من الأعمدة)
     cursor.execute('''CREATE TABLE IF NOT EXISTS payments (
                         id INTEGER PRIMARY KEY AUTOINCREMENT, contract_no TEXT, installment_no INTEGER, 
                         due_date TEXT, amount REAL, status TEXT)''')
+    
     # جدول المصاريف
     cursor.execute('''CREATE TABLE IF NOT EXISTS expenses (
                         id INTEGER PRIMARY KEY AUTOINCREMENT, property_name TEXT, category TEXT, 
                         amount REAL, expense_date TEXT, notes TEXT)''')
+    
+    # حل مؤقت: إذا كان الجدول قديماً ولا يحتوي على عمود contract_no، نقوم بإضافته لتفادي الخطأ
+    try:
+        cursor.execute("SELECT contract_no FROM payments LIMIT 1")
+    except sqlite3.OperationalError:
+        cursor.execute("DROP TABLE IF EXISTS payments")
+        cursor.execute('''CREATE TABLE payments (
+                            id INTEGER PRIMARY KEY AUTOINCREMENT, contract_no TEXT, installment_no INTEGER, 
+                            due_date TEXT, amount REAL, status TEXT)''')
+
     conn.commit()
     conn.close()
 
@@ -304,5 +318,5 @@ def download_pdf_report():
 
 if __name__ == '__main__':
     init_db()
-    app.run(debug=False, port=5000)
+    app.run(debug=True, port=5000)
     
