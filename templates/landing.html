@@ -11,30 +11,39 @@
         body { background-color: #0f172a; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; justify-content: space-between; direction: rtl; text-align: right; }
         
         /* Navbar */
-        header { padding: 20px 50px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); }
-        .logo { font-size: 1.5rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 10px; text-decoration: none; }
-        .nav-btn { background: #0284c7; color: white; padding: 10px 25px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
+        header { padding: 20px 50px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.08); flex-wrap: wrap; gap: 15px; }
+        .logo { font-size: 1.4rem; font-weight: 800; color: #38bdf8; display: flex; align-items: center; gap: 10px; text-decoration: none; }
+        .nav-btn { background: #0284c7; color: white; padding: 10px 22px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 0.9rem; transition: 0.2s; }
         .nav-btn:hover { background: #0369a1; }
 
         /* Hero Section */
-        .hero { max-width: 900px; margin: 0 auto; padding: 60px 20px; text-align: center; }
-        .hero h1 { font-size: 3rem; font-weight: 800; margin-bottom: 20px; line-height: 1.3; color: #ffffff; }
+        .hero { max-width: 900px; margin: 0 auto; padding: 50px 20px; text-align: center; }
+        .hero h1 { font-size: 2.5rem; font-weight: 800; margin-bottom: 20px; line-height: 1.3; color: #ffffff; }
         .hero h1 span { color: #38bdf8; }
-        .hero p { font-size: 1.1rem; color: #94a3b8; margin-bottom: 40px; line-height: 1.6; }
+        .hero p { font-size: 1.05rem; color: #94a3b8; margin-bottom: 35px; line-height: 1.6; }
         
-        .hero-actions { display: flex; justify-content: center; gap: 15px; }
-        .btn-primary { background: #0284c7; color: white; padding: 14px 35px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); transition: 0.2s; }
+        .hero-actions { display: flex; justify-content: center; gap: 15px; flex-wrap: wrap; }
+        .btn-primary { background: #0284c7; color: white; padding: 14px 35px; border-radius: 10px; text-decoration: none; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 15px rgba(2, 132, 199, 0.4); transition: 0.2s; display: inline-block; }
         .btn-primary:hover { background: #0369a1; transform: translateY(-2px); }
 
         /* Features Cards */
-        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto 60px auto; padding: 0 20px; }
-        .feature-card { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.08); padding: 30px; border-radius: 12px; text-align: center; }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; max-width: 1000px; margin: 0 auto 50px auto; padding: 0 20px; }
+        .feature-card { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(255,255,255,0.08); padding: 25px; border-radius: 12px; text-align: center; }
         .feature-card i { font-size: 2rem; color: #38bdf8; margin-bottom: 15px; }
         .feature-card h3 { font-size: 1.1rem; font-weight: 700; margin-bottom: 10px; color: #fff; }
         .feature-card p { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; }
 
         /* Footer */
         footer { text-align: center; padding: 20px; border-top: 1px solid rgba(255,255,255,0.08); color: #64748b; font-size: 0.85rem; }
+
+        /* Responsive Media Queries */
+        @media (max-width: 768px) {
+            header { padding: 15px 20px; justify-content: center; text-align: center; }
+            .hero { padding: 30px 15px; }
+            .hero h1 { font-size: 1.9rem; }
+            .hero p { font-size: 0.95rem; }
+            .btn-primary { width: 100%; text-align: center; padding: 12px 20px; }
+        }
     </style>
 </head>
 <body>
