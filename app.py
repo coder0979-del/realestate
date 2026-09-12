@@ -323,5 +323,90 @@ def download_pdf_report():
     
     return send_file(buffer, as_attachment=True, download_name="amlak_report.pdf", mimetype='application/pdf')
 
+# --- تعديل عقار ---
+@app.route('/edit_property/<name>', methods=['GET', 'POST'])
+def edit_property(name):
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        new_name = request.form.get('name')
+        p_type = request.form.get('type')
+        address = request.form.get('address')
+        price = request.form.get('price')
+        status = request.form.get('status')
+        
+        cursor.execute("""
+            UPDATE properties 
+            SET name = ?, type = ?, address = ?, price = ?, status = ? 
+            WHERE name = ?
+        """, (new_name, p_type, address, float(price), status, name))
+        conn.commit()
+        conn.close()
+        flash('تم تحديث بيانات العقار بنجاح', 'success')
+        return redirect(url_for('index'))
+        
+    cursor.execute("SELECT * FROM properties WHERE name = ?", (name,))
+    property_data = cursor.fetchone()
+    conn.close()
+    return render_template('edit_property.html', property=property_data)
+
+
+# --- تعديل عقد ---
+@app.route('/edit_contract/<contract_code>', methods=['GET', 'POST'])
+def edit_contract(contract_code):
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        tenant_name = request.form.get('tenant_name')
+        total_amount = float(request.form.get('total_amount'))
+        status = request.form.get('status')
+        
+        cursor.execute("""
+            UPDATE contracts 
+            SET tenant_name = ?, total_amount = ?, status = ? 
+            WHERE contract_code = ?
+        """, (tenant_name, total_amount, status, contract_code))
+        conn.commit()
+        conn.close()
+        flash('تم تحديث العقد بنجاح', 'success')
+        return redirect(url_for('index'))
+        
+    cursor.execute("SELECT * FROM contracts WHERE contract_code = ?", (contract_code,))
+    contract_data = cursor.fetchone()
+    conn.close()
+    return render_template('edit_contract.html', contract=contract_data)
+
+
+# --- تعديل دفعة / تحصيل ---
+@app.route('/edit_payment/<int:pay_id>', methods=['GET', 'POST'])
+def edit_payment(pay_id):
+    if not session.get('logged_in'): return redirect(url_for('login'))
+    conn = sqlite3.connect('real_estate.db')
+    cursor = conn.cursor()
+    
+    if request.method == 'POST':
+        due_date = request.form.get('due_date')
+        amount = float(request.form.get('amount'))
+        status = request.form.get('status')
+        
+        cursor.execute("""
+            UPDATE payments 
+            SET due_date = ?, amount = ?, status = ? 
+            WHERE id = ?
+        """, (due_date, amount, status, pay_id))
+        conn.commit()
+        conn.close()
+        flash('تم تحديث الدفعة بنجاح', 'success')
+        return redirect(url_for('index'))
+        
+    cursor.execute("SELECT * FROM payments WHERE id = ?", (pay_id,))
+    payment_data = cursor.fetchone()
+    conn.close()
+    return render_template('edit_payment.html', payment=payment_data)
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

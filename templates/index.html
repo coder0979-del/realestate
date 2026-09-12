@@ -38,6 +38,7 @@
             flex-direction: column;
             box-shadow: -4px 0 15px rgba(0,0,0,0.05);
             z-index: 100;
+            transition: transform 0.3s ease;
         }
 
         .brand-logo {
@@ -55,6 +56,8 @@
             display: flex;
             flex-direction: column;
             gap: 5px;
+            overflow-y: auto;
+            flex: 1;
         }
 
         .nav-item {
@@ -92,12 +95,36 @@
             box-shadow: 0 4px 12px rgba(2, 132, 199, 0.3);
         }
 
+        /* Mobile Menu Toggle Button */
+        .mobile-header {
+            display: none;
+            background-color: #0f172a;
+            color: white;
+            padding: 15px 20px;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 0;
+            z-index: 99;
+        }
+
+        .menu-toggle-btn {
+            background: none;
+            border: none;
+            color: #38bdf8;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
         /* Main Content Styling */
         .main-content {
             margin-right: 260px;
             flex: 1;
             padding: 30px;
             max-width: calc(100% - 260px);
+            transition: margin 0.3s ease;
         }
 
         /* Tab Content Control */
@@ -176,6 +203,7 @@
             width: 100%;
             border-collapse: collapse;
             font-size: 0.9rem;
+            white-space: nowrap; /* يمنع تداخل النصوص في الجداول على الموبايل ويوفر تمرير أفقي */
         }
 
         th {
@@ -239,6 +267,7 @@
             justify-content: center;
             gap: 8px;
             transition: background 0.2s;
+            text-decoration: none;
         }
 
         .btn-success { background-color: #10b981; color: white; }
@@ -268,48 +297,81 @@
             font-weight: 800;
             color: #0f172a;
         }
+
+        /* --- استعلامات الوسائط لتجاوب الموبايل (Responsive Media Queries) --- */
+        @media (max-width: 992px) {
+            .mobile-header {
+                display: flex;
+            }
+            .sidebar {
+                transform: translateX(100%); /* إخفاء القائمة الجانبية افتراضياً في الشاشات الصغيرة */
+            }
+            .sidebar.show {
+                transform: translateX(0); /* إظهار القائمة عند الضغط على زر القائمة */
+            }
+            .main-content {
+                margin-right: 0 !important;
+                max-width: 100% !important;
+                padding: 20px 15px;
+                margin-top: 60px; /* مسافة للهيدر العلوي الجديد في الموبايل */
+            }
+            .col-md-3, .col-md-4, .col-md-6 {
+                flex: 0 0 100% !important;
+            }
+        }
+
         @media print {
-        body {
-            background-color: #fff !important;
-            color: #000 !important;
+            body {
+                background-color: #fff !important;
+                color: #000 !important;
+            }
+            .sidebar, .nav-menu, .btn, form, header, .mobile-header {
+                display: none !important;
+            }
+            .main-content {
+                margin: 0 !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+                margin-top: 0 !important;
+            }
+            .card-box {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
         }
-        /* إخفاء القائمة الجانبية والأزرار عند الطباعة */
-        .sidebar, .nav-menu, .btn, form, header {
-            display: none !important;
-        }
-        /* جعل محتوى الصفحة يملأ الشاشة بالكامل */
-        .main-content {
-            margin: 0 !important;
-            padding: 0 !important;
-            max-width: 100% !important;
-        }
-        .card-box {
-            border: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-        }
-    }
     </style>
 </head>
 <body>
 
+    <!-- هيدر علوي يظهر فقط في شاشات الموبايل -->
+    <div class="mobile-header">
+        <div style="font-weight: 800; color: #38bdf8; font-size: 1.1rem;">
+            <i class="fas fa-city me-1"></i> أملاك Enterprise
+        </div>
+        <button class="menu-toggle-btn" onclick="toggleSidebar()">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+
     <!-- Sidebar Navigation -->
-    <div class="sidebar">
+    <div class="sidebar" id="appSidebar">
         <div class="brand-logo">
             <i class="fas fa-city me-1"></i> أملاك Enterprise
         </div>
-        <button onclick="printReport()" class="btn btn-primary" style="margin-bottom: 15px;">
-    <i class="fas fa-print"></i> طباعة / حفظ PDF
-</button>
-<a href="/download_pdf_report" class="btn btn-success">
-    <i class="fas fa-file-pdf"></i> تحميل تقرير العقارات PDF
-</a>
+        <div style="padding: 0 15px;">
+            <button onclick="printReport()" class="btn btn-primary" style="width: 100%; margin-bottom: 10px; font-size: 0.85rem;">
+                <i class="fas fa-print"></i> طباعة / حفظ PDF
+            </button>
+            <a href="/download_pdf_report" class="btn btn-success" style="width: 100%; margin-bottom: 15px; font-size: 0.85rem;">
+                <i class="fas fa-file-pdf"></i> تحميل التقرير PDF
+            </a>
+        </div>
         <ul class="nav-menu">
             <li class="nav-item">
                 <a class="nav-link active" onclick="switchTab(event, 'dashboard')">
                     <i class="fas fa-chart-pie"></i> لوحة التحكم
                 </a>
-                
             </li>
             <li class="nav-item">
                 <a class="nav-link" onclick="switchTab(event, 'properties')">
@@ -395,6 +457,7 @@
                                 <th>المبلغ</th>
                                 <th>الحالة</th>
                             </tr>
+                            
                         </thead>
                         <tbody>
                             {% for p in upcoming_payments %}
@@ -403,6 +466,7 @@
                                 <td>{{ p[1] }}</td>
                                 <td style="font-weight: 700; color: #10b981;">{{ "%.2f"|format(p[2]) }} د.إ</td>
                                 <td><span class="badge badge-danger">{{ p[3] }}</span></td>
+
                             </tr>
                             {% else %}
                             <tr><td colspan="4" style="text-align: center; color: #64748b; padding: 20px;">لا توجد دفعات مستحقة حالياً</td></tr>
@@ -413,7 +477,7 @@
             </div>
         </div>
 
-<!-- 2. Properties View -->
+        <!-- 2. Properties View -->
         <div id="properties" class="tab-pane">
             <div class="page-header">
                 <h4>إدارة العقارات</h4>
@@ -483,6 +547,14 @@
                                         {{ prop[4] }}
                                     </span>
                                 </td>
+                                                                <td>
+    <a href="/edit_property/{{ prop[0] }}" class="btn btn-sm btn-primary" style="text-decoration: none; margin-left: 5px;">
+        <i class="fas fa-edit"></i> تعديل
+    </a>
+    <a href="/delete_property/{{ prop[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('هل أنت متأكد من حذف هذا العقار؟')">
+        <i class="fas fa-trash"></i> حذف
+    </a>
+</td>
                                 <td>
                                     <a href="/delete_property/{{ prop[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('هل أنت متأكد من حذف هذا العقار؟')">
                                         <i class="fas fa-trash"></i> حذف
@@ -499,7 +571,6 @@
         </div>
 
         <!-- 3. Contracts View -->
-<!-- 3. Contracts View -->
         <div id="contracts" class="tab-pane">
             <div class="page-header">
                 <h4>سجل العقود الإيجارية</h4>
@@ -526,6 +597,14 @@
                                 <td style="color: #64748b;">{{ c[3] }}</td>
                                 <td style="font-weight: 700; color: #10b981;">{{ "%.2f"|format(c[4]|float) }} د.إ</td>
                                 <td>
+    <a href="/edit_contract/{{ c[0] }}" class="btn btn-sm btn-primary" style="text-decoration: none; margin-left: 5px;">
+        <i class="fas fa-edit"></i> تعديل
+    </a>
+    <a href="/delete_contract/{{ c[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('حذف العقد سيقوم بتحرير العقار وإلغاء دفعاته. هل أنت متأكد؟')">
+        <i class="fas fa-trash"></i> حذف
+    </a>
+</td>
+                                <td>
                                     <a href="/delete_contract/{{ c[0] }}" class="btn btn-sm" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;" onclick="return confirm('حذف العقد سيقوم بتحرير العقار وإلغاء دفعاته. هل أنت متأكد؟')">
                                         <i class="fas fa-trash"></i> حذف
                                     </a>
@@ -541,7 +620,6 @@
         </div>
 
         <!-- 4. New Contract View -->
-<!-- 4. New Contract View -->
         <div id="new-contract" class="tab-pane">
             <div class="page-header">
                 <h4>إنشاء عقد إيجار جديد</h4>
@@ -640,6 +718,16 @@
                                         <span style="color: #64748b; font-size: 0.8rem;">مكتمل</span>
                                     {% endif %}
                                 </td>
+                                <td>
+    <a href="/edit_payment/{{ pay[0] }}" class="btn btn-sm btn-primary" style="text-decoration: none; margin-left: 5px;">
+        <i class="fas fa-edit"></i> تعديل
+    </a>
+    {% if pay[5] != 'تم المدفوع' %}
+        <a href="/pay/{{ pay[0] }}" class="btn btn-sm btn-success" style="text-decoration: none;"><i class="fas fa-check"></i> سداد</a>
+    {% else %}
+        <span style="color: #64748b; font-size: 0.8rem;">مكتمل</span>
+    {% endif %}
+</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -732,26 +820,32 @@
 
     </div>
 
-    <!-- JavaScript for Dynamic Tabbing -->
+    <!-- JavaScript for Dynamic Tabbing & Mobile Menu -->
     <script>
         function switchTab(evt, tabId) {
-            // Hide all tab panes
             const panes = document.querySelectorAll('.tab-pane');
             panes.forEach(pane => pane.classList.remove('active'));
 
-            // Remove active class from all nav links
             const links = document.querySelectorAll('.nav-link');
             links.forEach(link => link.classList.remove('active'));
 
-            // Show current tab and set active class to clicked link
             document.getElementById(tabId).classList.add('active');
             evt.currentTarget.classList.add('active');
-        }
- 
-            function printReport() {
-                window.print(); // تفتح نافذة الطباعة في المتصفح، ومنها يختار المستخدم "Save as PDF"
+
+            // إخفاء القائمة الجانبية تلقائياً في الموبايل عند اختيار تبويب
+            if (window.innerWidth <= 992) {
+                document.getElementById('appSidebar').classList.remove('show');
             }
- 
+        }
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('appSidebar');
+            sidebar.classList.toggle('show');
+        }
+
+        function printReport() {
+            window.print();
+        }
     </script>
 </body>
 </html>

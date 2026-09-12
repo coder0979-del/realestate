@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تعديل العقار</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Cairo', sans-serif; background: #f8fafc; padding: 40px; direction: rtl; text-align: right; }
+        .card { background: white; padding: 30px; border-radius: 12px; max-width: 600px; margin: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-weight: 700; margin-bottom: 5px; color: #334155; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-family: 'Cairo', sans-serif; }
+        .btn { padding: 10px 20px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; color: white; background: #0284c7; }
+        .btn-secondary { background: #64748b; text-decoration: none; display: inline-block; margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>تعديل بيانات العقار</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label>اسم العقار</label>
+                <input type="text" name="name" value="{{ property[0] }}" required>
+            </div>
+            <div class="form-group">
+                <label>النوع</label>
+                <select name="type">
+                    <option {% if property[1] == 'شقة سكنية' %}selected{% endif %}>شقة سكنية</option>
+                    <option {% if property[1] == 'فيلا' %}selected{% endif %}>فيلا</option>
+                    <option {% if property[1] == 'مكتب تجاري' %}selected{% endif %}>مكتب تجاري</option>
+                    <option {% if property[1] == 'محل تجاري' %}selected{% endif %}>محل تجاري</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>العنوان</label>
+                <input type="text" name="address" value="{{ property[2] }}">
+            </div>
+            <div class="form-group">
+                <label>السعر</label>
+                <input type="number" name="price" value="{{ property[3] }}" required>
+            </div>
+            <div class="form-group">
+                <label>الحالة</label>
+                <select name="status">
+                    <option {% if property[4] == 'شاغر' %}selected{% endif %}>شاغر</option>
+                    <option {% if property[4] == 'مؤجر' %}selected{% endif %}>مؤجر</option>
+                </select>
+            </div>
+            <button type="submit" class="btn"><i class="fas fa-save"></i> حفظ التعديلات</button>
+            <a href="/" class="btn btn-secondary">إلغاء</a>
+        </form>
+    </div>
+</body>
+</html>
