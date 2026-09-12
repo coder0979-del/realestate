@@ -129,65 +129,53 @@ def logout():
     session.clear()
     
     return redirect(url_for('login'))
+
 @app.route('/')
 def index():
-    conn = sqlite3.connect("real_estate.db")
+    # إذا لم يكن المستخدم مسجلاً للدخول، قم بعرض صفحة الهبوط بدلاً من لوحة التحكم
+    if not session.get('logged_in'):
+        return render_template('landing.html')
+        
+    conn = sqlite3.connect('real_estate.db')
     cursor = conn.cursor()
 
-    # Dashboard KPIs
-    cursor.execute("SELECT COUNT(*) FROM properties")
-    total_props = cursor.fetchone()[0] or 0
-
-    cursor.execute("SELECT COUNT(*) FROM properties WHERE status = 'مؤجر'")
-    rented_props = cursor.fetchone()[0] or 0
-    occ_rate = (rented_props / total_props * 100) if total_props > 0 else 0
-
-    cursor.execute("SELECT SUM(amount) FROM payments WHERE status = 'تم المدفوع'")
-    total_inc = cursor.fetchone()[0] or 0.0
-
-    cursor.execute("SELECT SUM(amount) FROM expenses")
-    total_exp = cursor.fetchone()[0] or 0.0
-
-    net_profit = total_inc - total_exp
-
-    # Upcoming Payments
-    cursor.execute("""
-        SELECT contract_code, due_date, amount, status 
-        FROM payments 
-        WHERE status = 'مستحقة'
-        ORDER BY due_date ASC LIMIT 5
-    """)
-    upcoming_payments = cursor.fetchall()
-
-    # Properties list
-    cursor.execute("SELECT name, type, address, rent_price, status FROM properties")
+    cursor.execute("SELECT * FROM properties")
     properties = cursor.fetchall()
 
-    # Contracts list
-    cursor.execute("SELECT contract_code, tenant_name, property_name, start_date, total_amount FROM contracts")
+    cursor.execute("SELECT * FROM contracts")
     contracts = cursor.fetchall()
 
-    # Payments list
-    cursor.execute("SELECT id, contract_code, payment_number, due_date, amount, status FROM payments")
+    cursor.execute("SELECT * FROM payments")
     payments = cursor.fetchall()
 
-    # Expenses list
-    cursor.execute("SELECT property_name, category, amount, expense_date, notes FROM expenses")
+    cursor.execute("SELECT * FROM expenses")
     expenses = cursor.fetchall()
+
+    total_props = len(properties)
+    rented_props = sum(1 for p in properties if p[4] == 'مؤجر')
+    occ_rate = round((rented_props / total_props * 100) if total_props > 0 else 0, 1)
+
+    total_inc = sum(p[4] for p in payments if p[5] == 'تم المدفوع')
+    total_exp = sum(e[3] for e in expenses)
+    net_profit = total_inc - total_exp
+
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    cursor.execute("SELECT contract_no, due_date, amount, status FROM payments WHERE due_date >= ? AND status != 'تم المدفوع' ORDER BY due_date ASC LIMIT 5", (today_str,))
+    upcoming_payments = cursor.fetchall()
 
     conn.close()
 
     return render_template('index.html', 
-                           total_props=total_props, 
-                           occ_rate=round(occ_rate, 1),
-                           total_inc=total_inc, 
-                           total_exp=total_exp, 
+                           properties=properties, 
+                           contracts=contracts, 
+                           payments=payments, 
+                           expenses=expenses,
+                           total_props=total_props,
+                           occ_rate=occ_rate,
+                           total_inc=total_inc,
                            net_profit=net_profit,
-                           upcoming_payments=upcoming_payments,
-                           properties=properties,
-                           contracts=contracts,
-                           payments=payments,
-                           expenses=expenses)
+                           upcoming_payments=upcoming_payments)
+
 
 @app.route('/add_property', methods=['POST'])
 def add_property():
