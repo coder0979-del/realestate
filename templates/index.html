@@ -830,20 +830,40 @@
 
     <!-- JavaScript for Tabbing, Mobile Menu & Instant Search -->
     <script>
-        function switchTab(evt, tabId) {
-            const panes = document.querySelectorAll('.tab-pane');
-            panes.forEach(pane => pane.classList.remove('active'));
+       function switchTab(evt, tabId) {
+    // حفظ التبويب النشط في الذاكرة المحلية للمتصفح
+    localStorage.setItem('activeTab', tabId);
+    
+    const panes = document.querySelectorAll('.tab-pane');
+    panes.forEach(pane => pane.classList.remove('active'));
 
-            const links = document.querySelectorAll('.nav-link');
-            links.forEach(link => link.classList.remove('active'));
+    const links = document.querySelectorAll('.nav-link');
+    links.forEach(link => link.classList.remove('active'));
 
-            document.getElementById(tabId).classList.add('active');
-            evt.currentTarget.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+    evt.currentTarget.classList.add('active');
 
-            if (window.innerWidth <= 992) {
-                document.getElementById('appSidebar').classList.remove('show');
-            }
+    if (window.innerWidth <= 992) {
+        document.getElementById('appSidebar').classList.remove('show');
+    }
+}
+
+// استعادة التبويب النشط عند إعادة تحميل الصفحة
+window.addEventListener('DOMContentLoaded', (event) => {
+    const savedTab = localStorage.getItem('activeTab');
+    if (savedTab) {
+        const tabButton = document.querySelector(`.nav-link[onclick*="'${savedTab}'"]`);
+        const tabPane = document.getElementById(savedTab);
+        
+        if (tabButton && tabPane) {
+            document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            
+            tabPane.classList.add('active');
+            tabButton.classList.add('active');
         }
+    }
+});
 
         function toggleSidebar() {
             const sidebar = document.getElementById('appSidebar');

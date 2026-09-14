@@ -35,6 +35,7 @@ def init_db():
             tenant_name TEXT, 
             property_name TEXT, 
             start_date TEXT, 
+            end_date TEXT,
             total_amount REAL,
             status TEXT DEFAULT 'نشط'
         )
@@ -52,6 +53,11 @@ def init_db():
             FOREIGN KEY (contract_code) REFERENCES contracts (contract_code)
         )
     """)
+    cursor.execute("""CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL
+)""");
 
     # جدول المصاريف
     cursor.execute("""
@@ -129,12 +135,26 @@ def logout():
 
 @app.route('/')
 def index():
-    # إذا لم يكن المستخدم مسجلاً للدخول، عرض صفحة الهبوط
     if not session.get('logged_in'):
         return render_template('landing.html')
         
     conn = sqlite3.connect('real_estate.db')
     cursor = conn.cursor()
+
+    # --- فحص وتحديث العقود المنتهية تلقائياً ---
+    today_str = datetime.now().strftime('%Y-%m-%d')
+    cursor.execute("SELECT contract_code, property_name FROM contracts WHERE status = 'نشط' AND end_date < ?", (today_str,))
+    expired_contracts = cursor.fetchall()
+    
+    for c_code, p_name in expired_contracts:
+        # تحويل حالة العقد إلى منتهي
+        cursor.execute("UPDATE contracts SET status = 'منتهي' WHERE contract_code = ?", (c_code,))
+        # إرجاع حالة العقار إلى شاغر تلقائياً ليظهر في القائمة المنسدلة
+        cursor.execute("UPDATE properties SET status = 'شاغر' WHERE name = ?", (p_name,))
+    
+    if expired_contracts:
+        conn.commit()
+    # ---------------------------------------------
 
     cursor.execute("SELECT * FROM properties")
     properties = cursor.fetchall()
@@ -148,6 +168,9 @@ def index():
     cursor.execute("SELECT * FROM expenses")
     expenses = cursor.fetchall()
 
+    cursor.execute("SELECT id, username FROM users")
+    users = cursor.fetchall()
+
     total_props = len(properties)
     rented_props = sum(1 for p in properties if p[4] == 'مؤجر')
     occ_rate = round((rented_props / total_props * 100) if total_props > 0 else 0, 1)
@@ -156,7 +179,6 @@ def index():
     total_exp = sum(e[3] for e in expenses)
     net_profit = total_inc - total_exp
 
-    today_str = datetime.now().strftime('%Y-%m-%d')
     cursor.execute("SELECT contract_code, due_date, amount, status FROM payments WHERE due_date >= ? AND status != 'تم المدفوع' ORDER BY due_date ASC LIMIT 5", (today_str,))
     upcoming_payments = cursor.fetchall()
 
@@ -167,6 +189,7 @@ def index():
                            contracts=contracts, 
                            payments=payments, 
                            expenses=expenses,
+                           users=users,
                            total_props=total_props,
                            occ_rate=occ_rate,
                            total_inc=total_inc,
@@ -211,7 +234,7 @@ def add_contract():
     tenant = request.form.get('tenant_name')
     property_name = request.form.get('property_name')
     total_amount = float(request.form.get('total_amount'))
-    plan_months = int(request.form.get('installment_plan', 1))  # عدد الأشهر (المدة)
+    plan_months = int(request.form.get('installment_plan', 1))
     start_date = request.form.get('start_date')
 
     conn = sqlite3.connect("real_estate.db")
@@ -221,26 +244,27 @@ def add_contract():
     count = cursor.fetchone()[0] + 101
     contract_code = f"CNT-{count}"
 
-    cursor.execute("INSERT INTO contracts (contract_code, tenant_name, property_name, start_date, total_amount, status) VALUES (?, ?, ?, ?, ?, ?)",
-                   (contract_code, tenant, property_name, start_date, total_amount, "نشط"))
+    # حساب تاريخ الانتهاء بناءً على عدد الأشهر تقريبياً (30 يوماً لكل شهر)
+    start_date_dt = datetime.strptime(start_date, "%Y-%m-%d")
+    end_date_dt = start_date_dt + timedelta(days=30 * plan_months)
+    end_date_str = end_date_dt.strftime("%Y-%m-%d")
+
+    cursor.execute("INSERT INTO contracts (contract_code, tenant_name, property_name, start_date, end_date, total_amount, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                   (contract_code, tenant, property_name, start_date, end_date_str, total_amount, "نشط"))
 
     cursor.execute("UPDATE properties SET status = 'مؤجر' WHERE name = ?", (property_name,))
 
-    # إنشاء الأقساط بناءً على عدد الأشهر المختار (كل شهر قسط)
     num_payments = plan_months
     installment_amount = total_amount / num_payments
-    base_date = datetime.strptime(start_date, "%Y-%m-%d")
 
     for i in range(num_payments):
-        # زيادة شهر لكل قسط تدريجياً
-        due_date = (base_date + timedelta(days=30 * i)).strftime("%Y-%m-%d")
+        due_date = (start_date_dt + timedelta(days=30 * i)).strftime("%Y-%m-%d")
         cursor.execute("INSERT INTO payments (contract_code, installment_no, due_date, amount, status) VALUES (?, ?, ?, ?, ?)",
                        (contract_code, i + 1, due_date, installment_amount, "مستحقة"))
 
     conn.commit()
     conn.close()
     return redirect(url_for('index'))
-
 
 # --- مسارات تصدير البيانات إلى ملفات Excel (CSV) ---
 @app.route('/export/properties')
